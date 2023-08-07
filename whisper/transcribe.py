@@ -128,6 +128,7 @@ def transcribe(
     content_frames = mel.shape[-1] - N_FRAMES
     language_detection_segments: int = decode_options["language_detection_segments"]
     language_threshold: Optional[float] = decode_options["language_threshold"]
+    task: str = decode_options.get("task", "transcribe")
     
     if decode_options.get("language", None) is None:
         if not model.is_multilingual:
@@ -160,7 +161,13 @@ def transcribe(
                 )
 
     language: str = decode_options["language"]
-    task: str = decode_options.get("task", "transcribe")
+    if task == 'detect_language':
+        return dict(
+            text='',
+            segments=[],
+            language=language,
+        )
+    
     tokenizer = get_tokenizer(model.is_multilingual, language=language, task=task)
 
     if word_timestamps and task == "translate":
@@ -410,7 +417,7 @@ def cli():
     parser.add_argument("--output_format", "-f", type=str, default="all", choices=["txt", "vtt", "srt", "tsv", "json", "all"], help="format of the output file; if not specified, all available formats will be produced")
     parser.add_argument("--verbose", type=str2bool, default=True, help="whether to print out the progress and debug messages")
 
-    parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate"], help="whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')")
+    parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate", "detect_language"], help="whether to perform X->X speech recognition ('transcribe'), language detection ('detect_language') or X->English translation ('translate')")
     parser.add_argument("--language", type=str, default=None, choices=sorted(LANGUAGES.keys()) + sorted([k.title() for k in TO_LANGUAGE_CODE.keys()]), help="language spoken in the audio, specify None to perform language detection")
 
     parser.add_argument("--temperature", type=float, default=0, help="temperature to use for sampling")
